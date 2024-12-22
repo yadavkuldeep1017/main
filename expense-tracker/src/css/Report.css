@@ -1,0 +1,59 @@
+/* Report.css */
+
+.report-container {
+    display: flex;
+    flex-direction: column; /* Align items vertically */
+    align-items: center;     /* Center horizontally */
+    padding: 20px;
+}
+
+.report-filters {
+    display: flex;
+    gap: 10px; /* Space between filter elements */
+    margin-bottom: 20px; /* Space below filters */
+    align-items: center;
+}
+
+.report-filters label {
+    margin-right: 5px;
+}
+
+.chart-container {
+    width: 80%; /* Adjust as needed */
+    max-width: 800px; /* Set a maximum width */
+    margin-bottom: 20px;
+}
+
+.report-table {
+    width: 80%;
+    max-width: 800px;
+    border-collapse: collapse; /* Collapse table borders */
+    border: 1px solid #ddd;
+}
+
+.report-table th, .report-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.report-table th {
+    background-color: #f2f2f2; /* Light gray background for header */
+    font-weight: bold;
+}
+
+/* Responsive adjustments (optional) */
+@media (max-width: 768px) {
+    .report-filters {
+        flex-direction: column; /* Stack filters vertically on smaller screens */
+        align-items: flex-start;
+    }
+
+    .report-filters label {
+        margin-bottom: 5px;
+    }
+
+    .chart-container, .report-table {
+        width: 95%;
+    }
+}
