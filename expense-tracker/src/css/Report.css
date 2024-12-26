@@ -1,59 +1,151 @@
 /* Report.css */
-
 .report-container {
     display: flex;
-    flex-direction: column; /* Align items vertically */
-    align-items: center;     /* Center horizontally */
-    padding: 20px;
-}
-
-.report-filters {
-    display: flex;
-    gap: 10px; /* Space between filter elements */
-    margin-bottom: 20px; /* Space below filters */
+    flex-direction: column;
     align-items: center;
+    padding: 20px;
+    font-family: sans-serif;
 }
 
-.report-filters label {
-    margin-right: 5px;
-}
-
-.chart-container {
-    width: 80%; /* Adjust as needed */
-    max-width: 800px; /* Set a maximum width */
+h2 {
     margin-bottom: 20px;
 }
 
-.report-table {
-    width: 80%;
-    max-width: 800px;
-    border-collapse: collapse; /* Collapse table borders */
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+
+.loading-message {
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.report-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 400px;
+    max-width: 90%;
+}
+
+.report-options > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%; /* Make inner divs take full width */
+    box-sizing: border-box; /* Important for consistent sizing */
+}
+
+.report-options label {
+    font-weight: bold;
+    min-width: 120px; /* Consistent label width */
+    text-align: left;
+    flex-shrink: 0; /* Prevent labels from shrinking */
+}
+
+.report-options input[type="date"],
+.report-options input[type="month"],
+.report-options input[type="text"], /* Style the text input as well */
+.report-options select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-grow: 1; /* Allow input/select to expand */
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.button-group button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-group button:hover {
+    background-color: #45a049;
+}
+
+.button-group button:disabled {
+    background-color: #ddd;
+    cursor: default;
+}
+
+.report-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
     border: 1px solid #ddd;
 }
 
-.report-table th, .report-table td {
+th,
+td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
 }
 
-.report-table th {
-    background-color: #f2f2f2; /* Light gray background for header */
+th {
+    background-color: #f2f2f2;
     font-weight: bold;
 }
 
-/* Responsive adjustments (optional) */
-@media (max-width: 768px) {
-    .report-filters {
-        flex-direction: column; /* Stack filters vertically on smaller screens */
-        align-items: flex-start;
-    }
+/* Product Search Styles */
+.product-search-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: relative;
+    box-sizing: border-box; /* Ensure correct width calculation */
+}
 
-    .report-filters label {
-        margin-bottom: 5px;
-    }
+.product-suggestions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    position: absolute;
+    background-color: white;
+    z-index: 10;
+    width: calc(100% - 2px); /* Match input width, accounting for border */
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    top: calc(100% + 5px); /* Position below the input */
+    box-sizing: border-box; /* Important for consistent width */
+}
 
-    .chart-container, .report-table {
-        width: 95%;
-    }
+.product-suggestions li {
+    padding: 8px;
+    cursor: pointer;
+    background-color: white;
+    border-bottom: 1px solid #eee;
+}
+
+.product-suggestions li:hover {
+    background-color: #f5f5f5;
+}
+
+.product-suggestions li:last-child {
+    border-bottom: none;
 }

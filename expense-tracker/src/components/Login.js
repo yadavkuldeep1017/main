@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './../css/Login.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function Login() {
@@ -11,28 +11,35 @@ function Login() {
     const [error, setError] = useState(null);
 
     const handleLogin = async (e) => {
-        e.preventDefault(); //prevent form from refershing the page
+        e.preventDefault();
+        setError(null);
+
         try {
-            const response = await axios.post('http://localhost:5000/api/login', {
-                username: username,
-                password: password
+            const response = await axios.post('http://localhost:5000/login', {
+                username:username,
+                password:password
             });
-            if (response.status === 200) {
-                const data = response.data; // Get the response data
+
+            if (response.status==200) {
+                const data = response.data;
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('isAdmin', data.isAdmin.toString()); // Store isAdmin as string
                 localStorage.setItem('username',username);
-                navigate('/user', { state: { username: username, userId: data.userId } });
-            }
-            else{
-                setError('Invalid')
+                if (data.isAdmin) {
+                    navigate('/admin');
+                } else {
+                    navigate('/user');
+                }
+            } else {
+                const errorData = await response.json();
+                setError(errorData.message || "Login failed");
             }
         } catch (err) {
-            console.log("Login error: ", err);
-            console.log("Error response: ",err.response.data.message);
-            setError(err.response.data.message);
-            
-            
+            console.error("Login error:", err);
+            setError("Invalid Username or Password");
         }
     };
+
 
 
     return (
@@ -40,7 +47,7 @@ function Login() {
             <div className="screen">
                 <div className="screen__content">
                     <form className="login" onSubmit={handleLogin}>
-                    {error && <div style={{ color: 'red',}}>{error}</div>} {/* Display error message */}
+                        {error && <div style={{ color: 'red', }}>{error}</div>} {/* Display error message */}
 
                         <div className="login__field">
                             <i className="login__icon fas fa-user"></i>

@@ -1,121 +1,105 @@
-// Frontend (UserDashboard.js)
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../css/UserDashboard.css';
-import { Link } from 'react-router-dom';
+import '../css/UserDashboard.css'; // Make sure this path is correct
+import { Link, useNavigate } from 'react-router-dom';
 
 function UserDashboard() {
-    const [productTypes, setProductTypes] = useState([]);
     const [products, setProducts] = useState([]);
-    const [selectedType, setSelectedType] = useState('');
-    const [selectedProduct, setSelectedProduct] = useState('');
-    const [purchaseDate, setPurchaseDate] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState(''); // Store prod_id
     const [quantity, setQuantity] = useState('');
     const [price, setPrice] = useState('');
-    const [total, setTotal] = useState(0); // State for total amount
-    const [comment, setComment] = useState('');
     const [error, setError] = useState(null);
-    const username = localStorage.getItem('username')
+    const [searchQuery, setSearchQuery] = useState(''); // State to store search query
+    const [filteredProducts, setFilteredProducts] = useState([]); // To store filtered product list
+    const username = localStorage.getItem('username');
+    const navigate=useNavigate();
 
     useEffect(() => {
-        fetchProductTypes();
+        const fetchProducts = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/products');
+                console.log(response.data);
+                setProducts(response.data);
+                setFilteredProducts(response.data); // Initialize with all products
+            } catch (err) {
+                console.error("Error fetching products:", err);
+                setError("Error fetching products. Please try again later.");
+            }
+        };
+
+        fetchProducts();
     }, []);
 
-    useEffect(() => {
-        if (selectedType) {
-            fetchProductsByType(selectedType);
-        } else {
-            setProducts([]);
-            setSelectedProduct('')
-        }
-    }, [selectedType]);
-
-    useEffect(() => {
-        if (price && quantity) {
-            setTotal(parseFloat(price) * parseInt(quantity));
-        } else {
-            setTotal(0);
-        }
-    }, [price, quantity]);
-
-    const fetchProductTypes = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/product-types');
-            setProductTypes(response.data);
-        } catch (error) {
-            console.error("Error fetching product types:", error);
-            setError("Error fetching product types. Please try again later.");
-        }
+    const handleProductChange = (product) => {
+        console.log(product);
+        setSelectedProduct(product.prod_id);
+        setSearchQuery(product.prod_name); // Update the input with the selected product name
+        setPrice(product.price);
+        setFilteredProducts([]); // Clear search results once product is selected
     };
 
-    const fetchProductsByType = async (typeId) => {
-        try {
-            const response = await axios.get(`http://localhost:5000/api/products?typeId=${typeId}`);
-            setProducts(response.data);
-        } catch (error) {
-            console.error("Error fetching products:", error);
-            setError("Error fetching products. Please try again later.");
-        }
-    };
+    const handleSearchChange = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
 
-    const handleTypeChange = (e) => {
-        setSelectedType(e.target.value);
+        // Filter products based on search query
+        const results = products.filter(product =>
+            product.prod_name.toLowerCase().includes(query.toLowerCase())
+        );
+        setFilteredProducts(results);
     };
-
-    const handleProductChange = (e) => {
-        setSelectedProduct(e.target.value);
-    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-
         try {
-            const response = await axios.post('http://localhost:5000/api/purchases', {
-                date: purchaseDate,
+            console.log("prod ", products);
+            const response = await axios.post('http://localhost:5000/api/purchase_details', {
                 quantity: parseInt(quantity),
                 price: parseFloat(price),
-                comment: comment,
-                prod_id: parseInt(selectedProduct),
-                username: username
+                prod_id: selectedProduct, // Send only the prod_id
+                username: username,
             });
+
             if (response.status === 201) {
-                alert("Purchase added succesfully")
-                document.getElementById("purchaseForm").reset()
-                setSelectedType('')
+                alert('Purchase added successfully!');
+                document.getElementById('purchaseForm').reset();
+                setSelectedProduct('');
+                setQuantity('');
+                setPrice('');
+                setSearchQuery('');
+            } else {
+                setError('Failed to add purchase.');
             }
-            else {
-                setError("error in adding purchase")
+        } catch (err) {
+            console.error("Error adding purchase:", err);
+            if (err.response && err.response.data && err.response.data.message) {
+                setError(err.response.data.message);
+            } else {
+                setError('An error occurred while adding the purchase.');
             }
         }
-        catch (error) {
-            console.error("Error adding purchase:", error);
-            if(error.response) {
-                setError(error.response.data.message)
-            }
-            else {
-                setError("Error in adding purchase")
-            }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await axios.get('http://localhost:5000/logout'); // Send logout request
+            localStorage.removeItem('isAuthenticated'); // Remove authentication flag
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            navigate('/', { replace: true }); // Redirect to login, prevent going back
+        } catch (err) {
+            console.error("Error logging out:", err);
+            setError("An error occurred during logout.");
         }
-    }
+    };
 
     return (
         <div>
             <header className="App-header">
                 <h1>Purchase Tracker</h1>
                 <div className="top-right-buttons">
-                    {/* Add Product Button */}
-                    <Link to="/add-product">
-                        <button>Add Product</button>
-                    </Link>
-
-                    {/* Product Report Button */}
-                    <Link to="/report">
-                        <button>Product Report</button>
-                    </Link>
-                    <Link to="/">
-                        <button>Logout</button>
-                    </Link>
+                    <button onClick={handleLogout}>Logout</button> {/* Use onClick handler */}
                 </div>
             </header>
             <main>
@@ -123,40 +107,37 @@ function UserDashboard() {
                     <h2>Record a New Purchase</h2>
                     {error && <div style={{ color: 'red' }}>{error}</div>}
                     <form id="purchaseForm" onSubmit={handleSubmit}>
-                        <label htmlFor="purchaseDate">Purchase Date:</label>
-                        <input type="date" id="purchaseDate" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} required /><br />
 
-                        <label htmlFor="productType">Product Type:</label>
-                        <select id="productType" value={selectedType} onChange={handleTypeChange} required>
-                            <option value="">Select a Type</option>
-                            {productTypes.map((type) => (
-                                <option key={type.type_id} value={type.type_id}>
-                                    {type.type_name}
-                                </option>
-                            ))}
-                        </select><br />
-
-                        <label htmlFor="itemName">Name of Item:</label>
-                        <select id="itemName" value={selectedProduct} onChange={handleProductChange} required>
-                            <option value="">Select a Product</option>
-                            {products.map((product) => (
-                                <option key={product.prod_id} value={product.prod_id}>
-                                    {product.prod_name}
-                                </option>
-                            ))}
-                        </select><br />
+                        <label htmlFor="itemName">Search and Select Item:</label>
+                        <input
+                            type="text"
+                            id="searchItem"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            placeholder="Search for a product"
+                        />
+                        {filteredProducts.length > 0 && searchQuery && (
+                            <ul className="search-results">
+                                {filteredProducts.map((product) => (
+                                    <p
+                                        key={product.prod_id}
+                                        onClick={() => handleProductChange(product)}
+                                        style={{ cursor: 'pointer', padding: '5px', backgroundColor: '#f0f0f0', margin: '2px 0' }}
+                                    >
+                                        {product.prod_name}
+                                    </p>
+                                ))}
+                            </ul>
+                        )}
+                        <br />
 
                         <label htmlFor="quantity">Quantity:</label>
                         <input type="number" id="quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required /><br />
 
-                        <label htmlFor="price">Price:</label>
-                        <input type="number" id="price" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /><br />
 
                         <label htmlFor="total">Total Amount:</label>
-                        <input type="number" id="total" value={total} readOnly /><br /> {/* Display total */}
+                        <input type="number" id="total" value={price} onChange={(e) => setPrice(e.target.value)} required /><br /> {/* Display total */}
 
-                        <label htmlFor="comment">Comment/Note:</label>
-                        <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)}></textarea><br />
                         <div className="button-container">
                             <button id="save" type="submit">Save</button>
                             <button id="cancel" type="reset">Cancel</button>

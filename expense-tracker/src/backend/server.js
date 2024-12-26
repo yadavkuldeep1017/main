@@ -1,149 +1,153 @@
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2'); // Regular mysql2 import (no promises)
+const session = require('express-session');
+const loginRoutes = require('./login_api.js');
+const productsRoutes = require('./product.js')
+const db = require('./db.connection.js'); // Import the database module
+const corsOptions = require('./cors.js');
+const XLSX = require('xlsx');
 
 const app = express();
 const port = 5000;
-const dbConfig = require('./db.config.js');
-const corsOptions = require('./cors.js');
 
-// Middleware to parse JSON request bodies and enable CORS
 app.use(express.json());
 app.use(cors(corsOptions));
+app.use(session({
+  secret: 'kuldeep',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}));
 
-// Create a database connection (not a pool for this example, but pools are recommended for production)
-const connection = mysql.createConnection(dbConfig);
+// Connect to the database
+db.connectToDatabase();
+const connection = db.getConnection(); // Get the connection object
 
-connection.connect((err) => {
-    if (err) {
-        console.error('Error connecting to database:', err);
-        return; // Important: Stop the server if the connection fails
-    }
-    console.log('Connected to MySQL database');
-});
+// Mount the login route handler (passing the connection)
+const login = loginRoutes(connection);
+app.post('/login', login.login);
+app.get('/check-auth', login.checkAuth);
+app.get('/logout', login.logout);
 
-// Login route (without bcrypt - INSECURE, ONLY FOR LEARNING)
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
+const products = productsRoutes(connection); // Mount product routes
+app.get('/api/products', products.getAllProducts); // Define the /api/products route
 
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Please provide both username and password' });
-    }
+app.post('/api/purchase_details', products.insertProducts);
 
-    const query = 'SELECT * FROM users WHERE username = ?';
-    connection.query(query, [username], (err, results) => {
-        if (err) {
-            console.error('Database query error:', err);
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-
-        if (results.length === 0) {
-            return res.status(401).json({ message: 'Invalid username or password' });
-        }
-
-        const user = results[0];
-
-        // DANGEROUS: Comparing passwords in plain text
-        if (password !== user.password) {
-            return res.status(401).json({ message: 'Invalid username or password' });
-        }
-
-        // Successful login
-        res.json({ message: 'Login successful', username: user.username });
-    });
-});
-
-// Get product types (using callbacks)
-app.get('/api/product-types', (req, res) => {
-    connection.query('SELECT * FROM ProductTypes', (err, results) => {
-        if (err) {
-            console.error("Error fetching product types:", err);
-            return res.status(500).json({ message: 'Error fetching product types' });
-        }
-        res.json(results);
-    });
-});
-
-// Get products by type (using callbacks)
-app.get('/api/products', (req, res) => {
-    const typeId = req.query.typeId;
-    if (!typeId) {
-        return res.status(400).json({ message: 'Type ID is required' });
-    }
-    connection.query('SELECT * FROM Products WHERE type_id = ?', [parseInt(typeId)], (err, results) => {
-        if (err) {
-            console.error("Error fetching products:", err);
-            return res.status(500).json({ message: 'Error fetching products' });
-        }
-        res.json(results);
-    });
-});
-
-// Add new purchase (using callbacks)
-app.post('/api/purchases', (req, res) => {
-    const { date, quantity, price, comment, prod_id, username } = req.body;
-
-    if (!date || !quantity || !price || !prod_id || !username) {
-        return res.status(400).json({ message: "Please provide all required fields" });
-    }
-
-    connection.query(
-        'INSERT INTO purchase_details (date, quantity, price, comment, prod_id, username) VALUES (?, ?, ?, ?, ?, ?)',
-        [date, parseInt(quantity), parseFloat(price), comment, parseInt(prod_id), username],
-        (err, result) => {
-            if (err) {
-                console.error("Error adding purchase:", err);
-                return res.status(500).json({ message: 'Failed to add purchase', error: err.message });
-            }
-            res.status(201).json({ message: 'Purchase added successfully', purchaseId: result.insertId });
-        }
-    );
-});
-
-app.get('/api/report', (req, res) => {
-  const { startDate, endDate, typeId } = req.query;
-
-  let query = `
-      SELECT p.prod_name, SUM(pd.quantity) AS total_quantity
-      FROM purchase_details pd
-      JOIN Products p ON pd.prod_id = p.prod_id
-  `;
-
-  const queryParams = [];
-
-  if (startDate && endDate) {
-      query += ' WHERE pd.date BETWEEN ? AND ?';
-      queryParams.push(startDate, endDate);
+// Add a new product
+app.post('/api/products', (req, res) => {
+  const { prod_name, prod_desc } = req.body; // Use prod_desc
+  if (!prod_name || !prod_desc) { // Check for prod_desc
+    return res.status(400).json({ message: 'Please provide product name and description' });
   }
-  if (typeId) {
-      query += startDate && endDate ? ' AND p.type_id = ?' : ' WHERE p.type_id = ?';
-      queryParams.push(parseInt(typeId));
-  }
-
-  query += ' GROUP BY p.prod_name';
-
-  connection.query(query, queryParams, (err, results) => {
-      if (err) {
-          console.error("Error generating report:", err);
-          return res.status(500).json({ message: 'Error generating report' });
-      }
-      res.json(results);
+  connection.query('INSERT INTO product_details (prod_name, prod_desc) VALUES (?, ?)', [prod_name, prod_desc], (err, result) => { // Insert prod_desc
+    if (err) return res.status(500).json({ message: err.message });
+    res.status(201).json({ message: 'Product added', productId: result.insertId });
   });
 });
 
+// Uppurchase_purchase_date a product
+app.put('/api/products/:id', (req, res) => {
+  const { prod_name, prod_desc } = req.body; // Use prod_desc
+  const productId = req.params.id;
+  connection.query('UPDATE product_details SET prod_name = ?, prod_desc = ? WHERE prod_id = ?', [prod_name, prod_desc, productId], (err) => { // Uppurchase_purchase_date prod_desc
+    if (err) return res.status(500).json({ message: err.message });
+    res.json({ message: 'Product uppurchase_purchase_dated' });
+  });
+});
+
+// Delete a product
+app.delete('/api/products/:id', (req, res) => {
+  const productId = req.params.id;
+  connection.query('DELETE FROM product_details WHERE prod_id = ?', [productId], (err) => {
+    if (err) return res.status(500).json({ message: err.message });
+    res.json({ message: 'Product deleted' });
+  });
+});
+
+app.get('/api/reports', (req, res) => {
+  const { startDate, endDate, month, productName, reportType, productScope, download } = req.query;
+  let query = '';
+  let params = [];
+
+  switch (reportType) {
+      case 'custom':
+          if (productScope === 'specific') {
+              query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       WHERE pur.purchase_date BETWEEN ? AND ? AND p.prod_name = ?`; // Search by name
+              params = [startDate, endDate, productName];
+          } else {
+              query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       WHERE pur.purchase_date BETWEEN ? AND ?`;
+              params = [startDate, endDate];
+          }
+          break;
+      case 'monthly':
+          if (productScope === 'specific') {
+              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = YEAR(CURDATE()) AND p.prod_name = ?
+                       GROUP BY p.prod_name`; // Search by name
+              params = [month, productName];
+          } else {
+              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = YEAR(CURDATE())
+                       GROUP BY p.prod_name`;
+              params = [month];
+          }
+          break;
+      case 'all':
+          if (productScope === 'specific') {
+              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       WHERE p.prod_name = ?
+                       GROUP BY p.prod_name`; // Search by name
+              params = [productName];
+          } else {
+              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+                       FROM purchase_details pur
+                       JOIN product_details p ON pur.prod_id = p.prod_id
+                       GROUP BY p.prod_name`;
+          }
+          break;
+      default:
+          return res.status(400).json({ message: 'Invalid report type' });
+  }
+
+  connection.query(query, params, (err, results) => {
+      if (err) {
+          console.error("Database query error:", err);
+          return res.status(500).json({ message: 'Error fetching report data' });
+      }
+
+      if (download === 'excel') {
+          if (results.length > 0) {
+              const workbook = XLSX.utils.book_new();
+              const worksheet = XLSX.utils.json_to_sheet(results);
+              XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+              const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+              res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+              res.setHeader('Content-Disposition', 'attachment; filename=report.xlsx');
+              res.send(excelBuffer);
+          } else {
+              return res.status(404).json({ message: 'No data to export' });
+          }
+      } else {
+          res.json(results);
+      }
+  });
+});
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
-
-// Handle disconnection properly
-process.on('SIGINT', () => {
-    connection.end((err) => {
-      if (err) {
-        return console.log('error:' + err.message);
-      }
-      console.log('Close the database connection.');
-      process.exit();
-    });
-  });

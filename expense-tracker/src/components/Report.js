@@ -1,117 +1,265 @@
-// Frontend (Report.js)
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../css/Report.css'
-// import { Bar } from 'react-chartjs-2';
+import * as FileSaver from 'file-saver';
+import * as XLSX from 'xlsx';
+import '../css/Report.css';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Report() {
-    const [reportData, setReportData] = useState([]);
+    const [reportType, setReportType] = useState('custom');
+    const [productScope, setProductScope] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [selectedType, setSelectedType] = useState('');
-    const [productTypes, setProductTypes] = useState([]);
-    const [chartData, setChartData] = useState(null);
+    const [month, setMonth] = useState('');
+    const [productName, setProductName] = useState('');
+    const [productList, setProductList] = useState([]);
+    const [filteredProductList, setFilteredProductList] = useState([]);
+    const [reportData, setReportData] = useState([]);
     const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchProductTypes();
+        const fetchProducts = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/products');
+                setProductList(response.data);
+                setFilteredProductList(response.data);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+                setError("Error fetching product list.");
+            }
+        };
+
+        fetchProducts();
     }, []);
 
-    const fetchProductTypes = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/product-types');
-            setProductTypes(response.data);
-        } catch (error) {
-            console.error("Error fetching product types:", error);
-            setError("Error fetching product types. Please try again later.");
-        }
+    const handleProductNameChange = (e) => {
+        const query = e.target.value.toLowerCase();
+        setProductName(e.target.value);
+        setFilteredProductList(
+            productList.filter((product) => product.prod_name.toLowerCase().includes(query))
+        );
+    };
+
+    const handleProductSelect = (product) => {
+        setProductName(product.prod_name);
+        setFilteredProductList([]);
     };
 
     const generateReport = async () => {
+        setLoading(true);
+        setError(null);
+        let params = { reportType, productScope };
+
+        if (reportType === 'custom') {
+            if (!startDate || !endDate) {
+                setError("Please select start and end dates.");
+                setLoading(false);
+                return;
+            }
+            params.startDate = startDate;
+            params.endDate = endDate;
+        } else if (reportType === 'monthly') {
+            if (!month) {
+                setError("Please select a month.");
+                setLoading(false);
+                return;
+            }
+            params.month = month;
+        }
+
+        if (productScope === 'specific') {
+            if (!productName) {
+                setError("Please select a product name.");
+                setLoading(false);
+                return;
+            }
+            params.productName = productName;
+        }
+
         try {
-            const response = await axios.get('http://localhost:5000/api/report', {
-                params: {
-                    startDate: startDate,
-                    endDate: endDate,
-                    typeId: selectedType,
-                },
-            });
+            const response = await axios.get('http://localhost:5000/api/reports', { params });
             setReportData(response.data);
-            prepareChartData(response.data);
-        } catch (error) {
-            console.error("Error generating report:", error);
-            setError("Error generating report. Please try again later.");
+        } catch (err) {
+            console.error("Error fetching report:", err);
+            if (err.response && err.response.data && err.response.data.message) {
+                setError(err.response.data.message);
+            } else {
+                setError("Failed to generate report.");
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
-    const prepareChartData = (data) => {
-        if (!data || data.length === 0) {
-            setChartData(null);
-            return;
+    const downloadExcel = async () => {
+        setLoading(true);
+        setError(null);
+        let params = { reportType, productScope, download: 'excel' };
+
+        if (reportType === 'custom') {
+            if (!startDate || !endDate) {
+                setError("Please select start and end dates.");
+                setLoading(false);
+                return;
+            }
+            params.startDate = startDate;
+            params.endDate = endDate;
+        } else if (reportType === 'monthly') {
+            if (!month) {
+                setError("Please select a month.");
+                setLoading(false);
+                return;
+            }
+            params.month = month;
         }
 
-        const labels = data.map((item) => item.prod_name);
-        const quantities = data.map((item) => item.total_quantity);
+        if (productScope === 'specific') {
+            if (!productName) {
+                setError("Please select a product name.");
+                setLoading(false);
+                return;
+            }
+            params.productName = productName;
+        }
 
-        setChartData({
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Total Quantity Purchased',
-                    data: quantities,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)', // Blue with opacity
-                    borderColor: 'rgba(54, 162, 235, 1)', // Blue border
-                    borderWidth: 1,
-                },
-            ],
-        });
+        try {
+            const response = await axios.get('http://localhost:5000/api/reports', {
+                params,
+                responseType: 'blob',
+            });
+
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            });
+            FileSaver.saveAs(blob, 'report.xlsx');
+        } catch (error) {
+            console.error('Error downloading Excel:', error);
+            if (error.response && error.response.data && error.response.data.message) {
+                setError(error.response.data.message);
+            } else {
+                setError('Error downloading the report. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleLogout = async () => {
+        try {
+            await axios.get('http://localhost:5000/logout'); // Send logout request
+            localStorage.removeItem('isAuthenticated'); // Remove authentication flag
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            navigate('/', { replace: true }); // Redirect to login, prevent going back
+        } catch (err) {
+            console.error("Error logging out:", err);
+            setError("An error occurred during logout.");
+        }
     };
 
     return (
-        <div>
-            <h1>Purchase Report</h1>
-            {error && <div style={{ color: 'red' }}>{error}</div>}
-            <div>
-                <label htmlFor="startDate">Start Date:</label>
-                <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <div className="report-container">
+            <header className="App-header">
+                <h1>Purchase Tracker</h1>
+                <div className="top-right-buttons">
+                    {/* Add Product Button */}
+                    <Link to="/add-product">
+                        <button>Add Product</button>
+                    </Link>
 
-                <label htmlFor="endDate">End Date:</label>
-                <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    {/* Product Report Button */}
+                    <Link to="/admin">
+                        <button>Home</button>
+                    </Link>
+                    <button onClick={handleLogout}>Logout</button> {/* Use onClick handler */}
+                </div>
+            </header>
+            <h2>Generate Report</h2>
+            {error && <div className="error-message">{error}</div>}
+            {loading && <div className="loading-message">Loading...</div>}
 
-                <label htmlFor="productType">Product Type:</label>
-                <select id="productType" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-                    <option value="">All Types</option>
-                    {productTypes.map((type) => (
-                        <option key={type.type_id} value={type.type_id}>
-                            {type.type_name}
-                        </option>
-                    ))}
+            <div className="report-options">
+                <label htmlFor="reportType">Report Type:</label>
+                <select id="reportType" value={reportType} onChange={(e) => setReportType(e.target.value)}>
+                    <option value="custom">Custom Date Range</option>
+                    <option value="monthly">Monthly Report</option>
                 </select>
-                <button onClick={generateReport}>Generate Report</button>
+
+                {reportType === 'custom' && (
+                    <div className="date-inputs">
+                        <label htmlFor="startDate">Start Date:</label>
+                        <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        <label htmlFor="endDate">End Date:</label>
+                        <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    </div>
+                )}
+
+                {reportType === 'monthly' && (
+                    <div className="month-input">
+                        <label htmlFor="month">Select Month:</label>
+                        <input type="month" id="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+                    </div>
+                )}
+
+                <label htmlFor="productScope">Product Scope:</label>
+                <select id="productScope" value={productScope} onChange={(e) => setProductScope(e.target.value)}>
+                    <option value="all">All Products</option>
+                    <option value="specific">Specific Product</option>
+                </select>
+
+                {productScope === 'specific' && (
+                    <div className="product-search-container">
+                        <label htmlFor="productName">Product Name:</label>
+                        <input
+                            type="text"
+                            id="productName"
+                            placeholder="Type to search product..."
+                            value={productName}
+                            onChange={handleProductNameChange}
+                        />
+                        {filteredProductList.length > 0 && (
+                            <ul className="product-suggestions">
+                                {filteredProductList.map((product) => (
+                                    <li
+                                        key={product.prod_id}
+                                        onClick={() => handleProductSelect(product)}
+                                    >
+                                        {product.prod_name}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* {chartData && (
-                <div>
-                    <Bar data={chartData} />
-                </div>
-            )} */}
+            <div className="button-group">
+                <button onClick={generateReport} disabled={loading}>Generate Report</button>
+                <button onClick={downloadExcel} disabled={reportData.length === 0 || loading}>Download Excel</button>
+            </div>
+
             {reportData.length > 0 && (
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Total Quantity Purchased</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {reportData.map((item) => (
-                            <tr key={item.prod_id}>
-                                <td>{item.prod_name}</td>
-                                <td>{item.total_quantity}</td>
+                <div className="report-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                {reportData[0] && Object.keys(reportData[0]).map((key) => (
+                                    <th key={key}>{key}</th>
+                                ))}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {reportData.map((row, index) => (
+                                <tr key={index}>
+                                    {Object.values(row).map((value, index) => (
+                                        <td key={index}>{value === null ? '-' : value}</td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );

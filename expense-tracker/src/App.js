@@ -4,6 +4,17 @@ import React from 'react';
 import Login from './components/Login';
 import UserDashboard from './components/UserDashboard';
 import Report from './components/Report';
+import AdminDashboard from './components/AdminDashboard';
+import AddProduct from './components/AddProduct';
+import { Navigate, Outlet } from 'react-router-dom';
+
+
+
+const PrivateRoute = () => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+};
 
 
 function App() {
@@ -17,8 +28,16 @@ function App() {
       element:<UserDashboard/>
     },
     {
+      path: "/admin",
+      element:<AdminDashboard/>
+    },
+    {
       path: "/report",
       element:<Report/>
+    },
+    {
+      path: "/add-product",
+      element:<AddProduct/>
     }
   ])
   return (
