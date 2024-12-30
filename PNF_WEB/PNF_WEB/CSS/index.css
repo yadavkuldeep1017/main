@@ -19,13 +19,13 @@ body {
   font-size: 14px;
 }
 .nav-item a:hover {
-  color: #50d8af;
+  color: #0cc0df;
 }
 .nav {
   padding-left: 1.5rem !important;
 }
 .active {
-  color: #50d8af !important;
+  color: #0cc0df !important;
 }
 .navbar {
   background-color: #343434 !important;
@@ -214,12 +214,12 @@ section {
   white-space: pre-line;
 }
 .home-text h1 {
-  color: #50d8af;
+  color: #0cc0df;
   font-family: "Ubuntu", sans-serif;
   font-weight: 600;
 }
 .home-text h3 {
-  color: aliceblue;
+  color: #ffa800;
   font-family: "Ubuntu", sans-serif;
   font-weight: 600;
 }
@@ -234,6 +234,12 @@ section {
   font-family: "Noto Sans", sans-serif;
   font-weight: 400;
   font-style: normal;
+}
+.reg-text a {
+  font-weight: 600;
+}
+.reg-text a:hover {
+  color: #ffa800;
 }
 .button {
   background-color: #1c87c9;
@@ -251,16 +257,16 @@ section {
 }
 @keyframes glowing {
   0% {
-    background-color: #2ba805;
-    box-shadow: 0 0 3px #2ba805;
+    background-color: #0cc0df;
+    box-shadow: 0 0 3px #0cc0df;
   }
   50% {
-    background-color: #198754;
-    box-shadow: 0 0 10px #198754;
+    background-color: #0cc0df;
+    box-shadow: 0 0 10px #0cc0df;
   }
   100% {
-    background-color: #2ba805;
-    box-shadow: 0 0 3px #2ba805;
+    background-color: #0cc0df;
+    box-shadow: 0 0 3px #0cc0df;
   }
 }
 .button {
@@ -283,7 +289,7 @@ section {
   font-family: "Ubuntu", sans-serif;
   font-weight: 800;
   font-style: normal;
-  color: #5adbb5;
+  color: #0cc0df;
 }
 #service .section-header h2::after {
   content: "";
@@ -291,7 +297,7 @@ section {
   display: block;
   width: 50px;
   height: 3px;
-  background: #6082b6;
+  background: #ffa800;
   margin-top: 1rem;
 }
 #contact .section-header {
@@ -299,11 +305,16 @@ section {
   font-weight: 400;
   font-style: normal;
   text-align: center;
-  color: #5adbb5;
+  color: #0cc0df;
 }
 .card {
   padding: 1rem 1.5rem 2rem 1.5rem;
   box-shadow: 10px 10px 15px rgba(73, 78, 92, 0.1);
   transition: 0.4s;
   border: none !important;
+}
+.cntct-btn {
+  background-color: #0cc0df !important;
+  color: #ffa800 !important;
+  font-weight: 600 !important;
 }
