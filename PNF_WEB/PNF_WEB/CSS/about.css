@@ -1,0 +1,35 @@
+#service .section-header h2::after {
+  content: "";
+  position: absolute;
+  display: block;
+  width: 9%;
+  height: 3px;
+  background: #6082b6;
+  margin-top: 1rem;
+  margin-left: 10px;
+}
+#service .section-header {
+  margin: auto;
+  width: 15%;
+}
+.sub-content {
+  width: 60%;
+  margin: auto;
+}
+h3 {
+  margin-top: 3rem !important;
+}
+.sub-content ul {
+  margin-top: 2rem !important;
+}
+ul li {
+  font-weight: 600;
+}
+ul li p {
+  font-weight: 500;
+}
+p {
+  font-family: "Quicksand", serif;
+  line-height: 1.9rem;
+  font-weight: 600;
+}
