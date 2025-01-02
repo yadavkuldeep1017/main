@@ -1,12 +1,14 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import './App.css';
 import React from 'react';
 import Login from './components/Login';
 import UserDashboard from './components/UserDashboard';
 import Report from './components/Report';
 import AdminDashboard from './components/AdminDashboard';
-import AddProduct from './components/AddProduct';
 import { Navigate, Outlet } from 'react-router-dom';
+import ForgotPassword from './components/ForgotPassword';
+import Signup from './components/SignUp';
+import AddNewProduct from './components/AddNewProduct';
+import SearchableSelect from './components/SearchableSelect';
 
 
 
@@ -24,11 +26,11 @@ function App() {
       element:<Login/>
     },
     {
-      path: "/user",
+      path: "/user-dashboard",
       element:<UserDashboard/>
     },
     {
-      path: "/admin",
+      path: "/admin-dashboard",
       element:<AdminDashboard/>
     },
     {
@@ -37,8 +39,21 @@ function App() {
     },
     {
       path: "/add-product",
-      element:<AddProduct/>
+      element:<AddNewProduct/>
+    },
+    {
+      path: "/forgot-password",
+      element:<ForgotPassword/>
+    },
+    {
+      path: "/signup",
+      element:<Signup/>
+    },
+    {
+      path: "/select",
+      element:<SearchableSelect/>
     }
+
   ])
   return (
     <div className="App">

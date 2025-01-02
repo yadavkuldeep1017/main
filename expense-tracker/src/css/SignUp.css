@@ -1,13 +1,13 @@
-/* Login.css */
-.login-container {
+/* Signup.css */
+.signup-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Light blue gradient */
+    background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Softer gradient */
 }
 
-.login-card {
+.signup-card {
     background: white;
     padding: 30px;
     border-radius: 8px;
@@ -16,7 +16,7 @@
     max-width: 90%;
 }
 
-.login-card h2 {
+.signup-card h2 {
     text-align: center;
     margin-bottom: 20px;
     color: #333;
@@ -71,17 +71,22 @@
     text-align: center;
 }
 
-.bottom-links {
-    margin-top: 20px;
+.success-message {
+    color: #4CAF50;
+    margin-bottom: 10px;
     text-align: center;
 }
 
-.bottom-links a {
-    margin: 0 10px;
+.login-link {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.login-link a {
     color: #4287f5;
     text-decoration: none;
 }
 
-.bottom-links a:hover {
+.login-link a:hover {
     text-decoration: underline;
 }

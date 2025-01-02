@@ -6,6 +6,7 @@ const productsRoutes = require('./product.js')
 const db = require('./db.connection.js'); // Import the database module
 const corsOptions = require('./cors.js');
 const XLSX = require('xlsx');
+const signupRoute = require('./signup.js');
 
 const app = express();
 const port = 5000;
@@ -25,9 +26,15 @@ const connection = db.getConnection(); // Get the connection object
 
 // Mount the login route handler (passing the connection)
 const login = loginRoutes(connection);
+const signup = signupRoute(connection);
+
 app.post('/login', login.login);
 app.get('/check-auth', login.checkAuth);
 app.get('/logout', login.logout);
+app.post('/forgot-password', login.forgotPassword);
+app.post('/reset-password', login.resetPassword);
+app.post('/signup',signup.signup)
+
 
 const products = productsRoutes(connection); // Mount product routes
 app.get('/api/products', products.getAllProducts); // Define the /api/products route
@@ -71,79 +78,83 @@ app.get('/api/reports', (req, res) => {
   let params = [];
 
   switch (reportType) {
-      case 'custom':
-          if (productScope === 'specific') {
-              query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
+    case 'custom':
+      if (productScope === 'specific') {
+        query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
                        FROM purchase_details pur
                        JOIN product_details p ON pur.prod_id = p.prod_id
                        WHERE pur.purchase_date BETWEEN ? AND ? AND p.prod_name = ?`; // Search by name
-              params = [startDate, endDate, productName];
-          } else {
-              query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
+        params = [startDate, endDate, productName];
+      } else {
+        query = `SELECT distinct p.prod_name, sum(pur.quantity) AS total_quantity, sum(pur.total_price) AS total_amount
                        FROM purchase_details pur
                        JOIN product_details p ON pur.prod_id = p.prod_id
-                       WHERE pur.purchase_date BETWEEN ? AND ?`;
-              params = [startDate, endDate];
-          }
-          break;
-      case 'monthly':
-          if (productScope === 'specific') {
-              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
-                       FROM purchase_details pur
-                       JOIN product_details p ON pur.prod_id = p.prod_id
-                       WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = YEAR(CURDATE()) AND p.prod_name = ?
-                       GROUP BY p.prod_name`; // Search by name
-              params = [month, productName];
-          } else {
-              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
-                       FROM purchase_details pur
-                       JOIN product_details p ON pur.prod_id = p.prod_id
-                       WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = YEAR(CURDATE())
+                       WHERE pur.purchase_date BETWEEN ? AND ?
                        GROUP BY p.prod_name`;
-              params = [month];
-          }
-          break;
-      case 'all':
-          if (productScope === 'specific') {
-              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+        params = [startDate, endDate];
+      }
+      break;
+    case 'monthly':
+      if (!month) {
+        return res.status(400).json({ message: 'Please select a month.' });
+      }
+      const [year, monthNum] = month.split('-'); // Split the year and month
+      if (productScope === 'specific') {
+        query = `SELECT p.prod_name, pur.quantity, pur.total_price, pur.purchase_date
+                   FROM purchase_details pur
+                   JOIN product_details p ON pur.prod_id = p.prod_id
+                   WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = ? AND p.prod_name = ?`;
+        params = [parseInt(monthNum, 10), parseInt(year, 10), productName];
+      } else {
+        query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.total_price) AS total_amount
+                   FROM purchase_details pur
+                   JOIN product_details p ON pur.prod_id = p.prod_id
+                   WHERE MONTH(pur.purchase_date) = ? AND YEAR(pur.purchase_date) = ?
+                   GROUP BY p.prod_name`;
+        params = [parseInt(monthNum, 10), parseInt(year, 10)];
+      }
+      break;
+    case 'all':
+      if (productScope === 'specific') {
+        query = `SELECT p.prod_name, pur.quantity,  pur.total_price
                        FROM purchase_details pur
                        JOIN product_details p ON pur.prod_id = p.prod_id
                        WHERE p.prod_name = ?
                        GROUP BY p.prod_name`; // Search by name
-              params = [productName];
-          } else {
-              query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.quantity * pur.total_price) AS total_amount
+        params = [productName];
+      } else {
+        query = `SELECT p.prod_name, SUM(pur.quantity) AS total_quantity, SUM(pur.total_price) AS total_amount
                        FROM purchase_details pur
                        JOIN product_details p ON pur.prod_id = p.prod_id
                        GROUP BY p.prod_name`;
-          }
-          break;
-      default:
-          return res.status(400).json({ message: 'Invalid report type' });
+      }
+      break;
+    default:
+      return res.status(400).json({ message: 'Invalid report type' });
   }
 
   connection.query(query, params, (err, results) => {
-      if (err) {
-          console.error("Database query error:", err);
-          return res.status(500).json({ message: 'Error fetching report data' });
-      }
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: 'Error fetching report data' });
+    }
 
-      if (download === 'excel') {
-          if (results.length > 0) {
-              const workbook = XLSX.utils.book_new();
-              const worksheet = XLSX.utils.json_to_sheet(results);
-              XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
-              const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    if (download === 'excel') {
+      if (results.length > 0) {
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(results);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
 
-              res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-              res.setHeader('Content-Disposition', 'attachment; filename=report.xlsx');
-              res.send(excelBuffer);
-          } else {
-              return res.status(404).json({ message: 'No data to export' });
-          }
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=report.xlsx');
+        res.send(excelBuffer);
       } else {
-          res.json(results);
+        return res.status(404).json({ message: 'No data to export' });
       }
+    } else {
+      res.json(results);
+    }
   });
 });
 

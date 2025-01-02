@@ -1,79 +1,69 @@
-import { useState } from 'react';
-import './../css/Login.css';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import '../css/Login.css'; // Import your CSS file
 
 function Login() {
-
-    const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
         try {
-            const response = await axios.post('http://localhost:5000/login', {
-                username:username,
-                password:password
-            });
-
-            if (response.status==200) {
-                const data = response.data;
+            const response = await axios.post('http://localhost:5000/login', { username, password });
+            if (response.data.message === 'Login successful') {
                 localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('isAdmin', data.isAdmin.toString()); // Store isAdmin as string
-                localStorage.setItem('username',username);
-                if (data.isAdmin) {
-                    navigate('/admin');
-                } else {
-                    navigate('/user');
-                }
+                localStorage.setItem('isAdmin', response.data.isAdmin);
+                localStorage.setItem('username', username);
+                navigate(response.data.isAdmin ? '/admin-dashboard' : '/user-dashboard');
             } else {
-                const errorData = await response.json();
-                setError(errorData.message || "Login failed");
+                setError('Invalid username or password.');
             }
-        } catch (err) {
-            console.error("Login error:", err);
-            setError("Invalid Username or Password");
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('An error occurred during login.');
         }
     };
 
-
-
     return (
-        <div className="container">
-            <div className="screen">
-                <div className="screen__content">
-                    <form className="login" onSubmit={handleLogin}>
-                        {error && <div style={{ color: 'red', }}>{error}</div>} {/* Display error message */}
-
-                        <div className="login__field">
-                            <i className="login__icon fas fa-user"></i>
-                            <input type="text" className="login__input" placeholder="Username" value={username} onChange={(event) => setUsername(event.target.value)} required />
-                        </div>
-                        <div className="login__field">
-                            <i className="login__icon fas fa-lock"></i>
-                            <input type="password" className="login__input" placeholder="Password" value={password} onChange={(event) => setPassword(event.target.value)
-                            } required />
-                        </div>
-                        <button className="button login__submit">
-                            <span className="button__text">Log In</span>
-                            <i className="button__icon fas fa-chevron-right"></i>
-                        </button>
-
-                    </form>
-                </div>
-                <div className="screen__background">
-                    <span className="screen__background__shape screen__background__shape4"></span>
-                    <span className="screen__background__shape screen__background__shape3"></span>
-                    <span className="screen__background__shape screen__background__shape2"></span>
-                    <span className="screen__background__shape screen__background__shape1"></span>
-                </div>
+        <div className="login-container">
+            <div className="login-card">
+                <h2>Login</h2>
+                {error && <div className="error-message">{error}</div>}
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="username">Username:</label>
+                        <input
+                            type="text"
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="password">Password:</label>
+                        <input
+                            type="password"
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <button type="submit" className="submit-button">Log In</button>
+                    <div className="bottom-links">
+                        <Link to="/forgot-password">Forgot Password?</Link>
+                        <Link to="/signup">Sign Up</Link>
+                    </div>
+                </form>
             </div>
         </div>
-    )
+    );
 }
 
 export default Login;

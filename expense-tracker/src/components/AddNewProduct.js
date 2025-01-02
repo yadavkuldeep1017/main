@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import '../css/AdminDashboard.css'; // Make sure the path is correct
+import '../css/AddNewProduct.css';
 
-function AdminDashboard() {
+function AddNewProduct() {
     const [products, setProducts] = useState([]);
     const [newProductName, setNewProductName] = useState('');
     const [newProductDesc, setNewProductDesc] = useState('');
@@ -20,7 +20,7 @@ function AdminDashboard() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/products'); // Use relative path
+            const response = await axios.get('http://localhost:5000/api/products');
             setProducts(response.data);
         } catch (err) {
             console.error("Error fetching products:", err);
@@ -30,7 +30,7 @@ function AdminDashboard() {
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
-        setError(null); // Clear any previous errors
+        setError(null);
 
         if (!newProductName || !newProductDesc) {
             setError("Please provide both product name and description.");
@@ -117,18 +117,14 @@ function AdminDashboard() {
         product.prod_desc.toLowerCase().includes(searchQuery)
     );
 
-
     return (
-        <div>
+        <div className='add-product-page'>
             <header className="App-header">
                 <h1>Admin Dashboard</h1>
                 <div className="top-right-buttons">
-                    {/* Add Product Button */}
-                    <Link to="/admin">
+                    <Link to="/admin-dashboard">
                         <button>Add New Purchase</button>
                     </Link>
-
-                    {/* Product Report Button */}
                     <Link to="/report">
                         <button>Product Report</button>
                     </Link>
@@ -137,19 +133,27 @@ function AdminDashboard() {
             </header>
             <main>
                 <h2>Product Management</h2>
-                {error && <div className="error-message">{error}</div>} {/* Use a class for styling */}
+                {error && <div className="error-message">{error}</div>}
 
-                <h3>Add New Product</h3>
-                <form onSubmit={handleAddProduct}>
-                    <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} required />
-                    <input type="text" placeholder="Product Description" value={newProductDesc} onChange={(e) => setNewProductDesc(e.target.value)} required />
-                    <button type="submit">Add Product</button>
-                </form>
+                <div className="add-product-container"> {/* Added container */}
+                    <h3>Add New Product</h3>
+                    <form onSubmit={handleAddProduct} className="add-product-form">
+                        <div className="form-group">
+                            <label htmlFor="productName">Product Name:</label>
+                            <input type="text" id="productName" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} required className="add-product-input" />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="productDesc">Product Description:</label>
+                            <textarea id="productDesc" placeholder="Product Description" value={newProductDesc} onChange={(e) => setNewProductDesc(e.target.value)} required className="add-product-input" />
+                        </div>
+                        <button type="submit" className="add-product-button">Add Product</button>
+                    </form>
+                </div>
 
-                <input type="text" placeholder="Search products..." value={searchQuery} onChange={handleSearch} style={{ marginBottom: '10px', width: '300px' }} /> {/* Search input */}
+                <input type="text" placeholder="Search products..." value={searchQuery} onChange={handleSearch} style={{ marginBottom: '10px', width: '300px' }} />
                 <h3>Product List</h3>
-                <table>
-                    <thead>
+                <table className="product-table"> {/* Added className */}
+                    <thead className="product-table-header"> {/* Added className */}
                         <tr>
                             <th>ID</th>
                             <th>Name</th>
@@ -157,20 +161,20 @@ function AdminDashboard() {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                    {filteredProducts.map((product) => (
+                    <tbody className="product-table-body"> {/* Added className */}
+                        {filteredProducts.map((product) => (
                             <tr key={product.prod_id}>
                                 <td>{product.prod_id}</td>
                                 <td>
                                     {editingProductId === product.prod_id ? (
-                                        <input type="text" value={editedProductName} onChange={(e) => setEditedProductName(e.target.value)} required />
+                                        <input type="text" value={editedProductName} onChange={(e) => setEditedProductName(e.target.value)} required className="add-product-input"/>
                                     ) : (
                                         product.prod_name
                                     )}
                                 </td>
                                 <td>
                                     {editingProductId === product.prod_id ? (
-                                        <input type="text" value={editedProductDesc} onChange={(e) => setEditedProductDesc(e.target.value)} required />
+                                        <input type="text" value={editedProductDesc} onChange={(e) => setEditedProductDesc(e.target.value)} required className="add-product-input"/>
                                     ) : (
                                         product.prod_desc
                                     )}
@@ -178,11 +182,11 @@ function AdminDashboard() {
                                 <td>
                                     <div className="button-container">
                                         {editingProductId === product.prod_id ? (
-                                            <button onClick={handleSaveEdit}>Save</button>
+                                            <button onClick={handleSaveEdit} className="add-product-button">Save</button>
                                         ) : (
-                                            <button onClick={() => handleEditProduct(product)}>Edit</button>
+                                            <button onClick={() => handleEditProduct(product)} className="add-product-button">Edit</button>
                                         )}
-                                        <button onClick={() => handleDeleteProduct(product.prod_id)}>Delete</button>
+                                        <button onClick={() => handleDeleteProduct(product.prod_id)} className="add-product-button">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -194,4 +198,4 @@ function AdminDashboard() {
     );
 }
 
-export default AdminDashboard;
+export default AddNewProduct;

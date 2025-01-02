@@ -1,0 +1,154 @@
+/* AddProduct.css */
+
+.add-product-page { /* Add a top-level container class */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f0f2f5; /* Consistent background */
+    box-sizing: border-box;
+    padding: 20px;
+    align-items: center;
+}
+
+.add-product-page .App-header { /* More specific header style */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: 95%;
+    max-width: 1200px;
+    box-sizing: border-box;
+}
+
+.add-product-page .top-right-buttons { /* More specific button styles */
+    display: flex;
+    gap: 15px;
+}
+
+.add-product-page main { /* More specific main style */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    width: 95%;
+    max-width: 1200px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    margin-top: 20px;
+}
+
+.add-product-page h2 { /* More specific heading styles */
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.add-product-page h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #555;
+    text-align: center;
+}
+
+.add-product-page form { /* More specific form style */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 500px;
+    max-width: 95%;
+}
+
+.add-product-page input[type="text"],
+.add-product-page textarea { /* More specific input/textarea styles */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.add-product-page textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.add-product-page input[type="text"]:focus,
+.add-product-page textarea:focus {
+    outline: none;
+    border-color: #4287f5;
+    box-shadow: 0 0 5px rgba(66, 135, 245, 0.2);
+}
+
+.add-product-page button { /* More specific button style */
+    background-color: #4287f5;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.add-product-page button:hover {
+    background-color: #3069c9;
+}
+
+.add-product-page table { /* More specific table style */
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.add-product-page th,
+.add-product-page td { /* More specific th/td styles */
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.add-product-page th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.add-product-page tr:last-child td {
+    border-bottom: none;
+}
+
+.add-product-page .button-container { /* More specific button container */
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.add-product-page .error-message { /* More specific error message */
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Responsive adjustments - Keep these, but make them more specific if needed */
+@media (max-width: 768px) {
+    .add-product-page table {
+        font-size: 14px;
+    }
+
+    .add-product-page th,
+    .add-product-page td {
+        padding: 8px;
+    }
+}
