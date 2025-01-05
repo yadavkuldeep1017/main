@@ -13,7 +13,8 @@ module.exports = (connection) => {
                 }
 
                 if (results.length === 1) {
-                    req.session.user = { username: results[0].username, isAdmin: results[0].isAdmin };
+                    // const isAdminBoolean = results[0].isAdmin ? true : false; // Ternary operator
+                    // req.session.user = { username: results[0].username, isAdmin: isAdminBoolean };
                     res.json({ message: 'Login successful', isAdmin: results[0].isAdmin });
                 } else {
                     res.status(401).json({ message: 'Invalid credentials' });
@@ -40,32 +41,32 @@ module.exports = (connection) => {
         });
     };
 
-    const forgotPasswordRoute=(req,res)=>{
-        const {mobileNumber}=req.body;
-        connection.query('SELECT mobile FROM users WHERE mobile=?',[mobileNumber],(err,results)=>{
-            if(err){
-                console.error("Database error:",err);
-                return res.status(500).json({message:'Database error'});
+    const forgotPasswordRoute = (req, res) => {
+        const { mobileNumber } = req.body;
+        connection.query('SELECT mobile FROM users WHERE mobile=?', [mobileNumber], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ message: 'Database error' });
             }
-            if(results.length===1){
-                res.json({message:'Mobile number found'});
-            }else{
-                res.status(404).json({message:'Mobile number not found'});
+            if (results.length === 1) {
+                res.json({ message: 'Mobile number found' });
+            } else {
+                res.status(404).json({ message: 'Mobile number not found' });
             }
         });
     }
-    
-    const resetPasswordRoute=(req,res)=>{
-        const {mobileNumber,newPassword}=req.body;
-        connection.query('UPDATE users SET password=? WHERE mobile=?',[newPassword,mobileNumber],(err,results)=>{
-            if(err){
-                console.error("Database error:",err);
-                return res.status(500).json({message:'Database error'});
+
+    const resetPasswordRoute = (req, res) => {
+        const { mobileNumber, newPassword } = req.body;
+        connection.query('UPDATE users SET password=? WHERE mobile=?', [newPassword, mobileNumber], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ message: 'Database error' });
             }
-            if(results.affectedRows===1){
-                res.json({message:'Password reset successfully'});
-            }else{
-                res.status(404).json({message:'Mobile number not found'});
+            if (results.affectedRows === 1) {
+                res.json({ message: 'Password reset successfully' });
+            } else {
+                res.status(404).json({ message: 'Mobile number not found' });
             }
         })
     }
@@ -74,7 +75,7 @@ module.exports = (connection) => {
         login: loginRoute,
         checkAuth: checkAuthRoute,
         logout: logoutRoute,
-        forgotPassword:forgotPasswordRoute,
-        resetPassword:resetPasswordRoute
+        forgotPassword: forgotPasswordRoute,
+        resetPassword: resetPasswordRoute
     };
 };

@@ -9,7 +9,7 @@ const XLSX = require('xlsx');
 const signupRoute = require('./signup.js');
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000; // Use environment variable or default
 
 app.use(express.json());
 app.use(cors(corsOptions));

@@ -3,6 +3,8 @@ import axios from 'axios';
 import '../css/UserDashboard.css'; // Import your CSS
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import { useAuth } from '../App.js'; // Import useAuth
+
 
 function UserDashboard() {
     const [products, setProducts] = useState([]);
@@ -88,6 +90,8 @@ function UserDashboard() {
             formRef.current.reset();
         }
     };
+    const auth = useAuth();
+
 
     const handleLogout = async () => {
         try {
@@ -95,6 +99,7 @@ function UserDashboard() {
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('isAdmin');
             localStorage.removeItem('username');
+            auth.logout();
             navigate('/', { replace: true });
         } catch (err) {
             console.error("Error logging out:", err);
