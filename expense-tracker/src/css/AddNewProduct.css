@@ -26,6 +26,8 @@
 .add-product-page .top-right-buttons { /* More specific button styles */
     display: flex;
     gap: 15px;
+    padding-top: 100px;
+    padding-right: 150px;
 }
 
 .add-product-page main { /* More specific main style */

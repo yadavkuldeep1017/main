@@ -21,6 +21,13 @@
     max-width: 1200px;
 }
 
+.top-right-buttons { /* More specific button styles */
+    display: flex;
+    gap: 15px;
+    padding-top: 100px;
+    padding-right: 150px;
+}
+
 .header-button {
     background-color: #4287f5;
     color: white;

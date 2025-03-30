@@ -18,11 +18,12 @@ function Report() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await axios.get('http://localhost:5000/api/products');
+                const response = await axios.get(`${backendUrl}/api/products`);
                 setProductList(response.data);
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -65,7 +66,18 @@ function Report() {
         }
 
         try {
-            const response = await axios.get('http://localhost:5000/api/reports', { params });
+            const response = await axios.get(`${backendUrl}/api/reports`, { params });
+            // const formattedData = response.data.map((row) => {
+            //     let totalPrice;
+            //     if (row.total_amount) {
+            //         totalPrice = row.total_amount;
+            //     } else if (row.total_price) {
+            //         totalPrice = row.total_price;
+            //     } else {
+            //         totalPrice = row.price * row.quantity;
+            //     }
+            //     return { ...row, totalPrice };
+            // });
             setReportData(response.data);
         } catch (err) {
             console.error("Error fetching report:", err);
@@ -111,15 +123,39 @@ function Report() {
         }
 
         try {
-            const response = await axios.get('http://localhost:5000/api/reports', {
+            const response = await axios.get(`${backendUrl}/api/reports`, {
                 params,
                 responseType: 'blob',
             });
 
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            });
-            FileSaver.saveAs(blob, 'report.xlsx');
+            if (response.status === 200) {
+                const contentDisposition = response.headers['content-disposition'];
+                let filename = 'report.xlsx';
+
+                if (contentDisposition) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(contentDisposition);
+                    if (matches != null && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+
+                const blob = new Blob([response.data], {
+                    type: response.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                const totalPriceSum = reportData.reduce((sum, item) => sum + item.Amount, 0);
+                console.log('Total sum:- ', totalPriceSum);
+                const ws = XLSX.utils.json_to_sheet(reportData);
+                XLSX.utils.sheet_add_aoa(ws, [["Total Price Sum:", totalPriceSum]], { origin: "A" + (reportData.length + 2) });
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Report');
+                const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                FileSaver.saveAs(data, filename);
+            } else {
+                console.error('Download failed with status:', response.status);
+                setError(`Download failed with status: ${response.status}`);
+            }
         } catch (error) {
             console.error('Error downloading Excel:', error);
             if (error.response && error.response.data && error.response.data.message) {
@@ -134,7 +170,7 @@ function Report() {
 
     const handleLogout = async () => {
         try {
-            await axios.get('http://localhost:5000/logout');
+            await axios.get(`${backendUrl}/logout`);
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('isAdmin');
             localStorage.removeItem('username');
@@ -152,16 +188,15 @@ function Report() {
 
     return (
         <div className="report-container">
-            <header className="App-header">
-                <h1>Purchase Tracker</h1>
-                <div className="top-right-buttons">
-                    <Link to="/add-product">
-                        <button className="header-button">Add Product</button>
-                    </Link>
-                    <Link to="/admin-dashboard">
-                        <button className="header-button">Home</button>
-                    </Link>
-                    <button onClick={handleLogout} className="header-button">Logout</button>
+            <header className="dashboard-header">
+                <div className="header-content">
+                    <h1>Add New Product</h1> {/* Changed title */}
+                    <div className="header-actions">
+                        <Link to="/admin-dashboard" className="header-link">Add New Purchase</Link> {/* Home link */}
+                        <Link to="/purchases" className="header-link">Purchases</Link>
+                        <Link to="/add-product" className="header-link">Add New Product</Link>
+                        <button className="logout-button" onClick={handleLogout}>Logout</button>
+                    </div>
                 </div>
             </header>
             <main>
@@ -241,6 +276,12 @@ function Report() {
                                         ))}
                                     </tr>
                                 ))}
+                                <tr>
+                                    <td colSpan={Object.keys(reportData[0]).length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Price Sum:</td>
+                                    <td style={{ fontWeight: 'bold' }}>
+                                        {reportData.reduce((sum, item) => sum + Number(item.Amount), 0)}
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

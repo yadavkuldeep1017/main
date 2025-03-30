@@ -12,13 +12,21 @@ function AdminDashboard() {
     const [error, setError] = useState(null);
     const username = localStorage.getItem('username');
     const navigate = useNavigate();
-    const [purchaseDate, setPurchaseDate] = useState('');
+    const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
     const formRef = useRef(null);
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
+    const [addedProducts, setAddedProducts] = useState([]);
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editQuantityValue, setEditQuantityValue] = useState('');
+    const [editPriceValue, setEditPriceValue] = useState('');
+    const [sumProduct, setSumProduct] = useState(0);
+    const productSelectRef = useRef(null); 
+
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await axios.get('http://localhost:5000/api/products');
+                const response = await axios.get(`${backendUrl}/api/products`);
                 setProducts(response.data);
             } catch (err) {
                 console.error("Error fetching products:", err);
@@ -33,57 +41,98 @@ function AdminDashboard() {
         setSelectedProduct(selectedOption);
         if (selectedOption) {
             setPrice(selectedOption.price);
+            document.getElementById('quantity').focus();
         } else {
             setPrice('');
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-
-        if (!selectedProduct) {
-            setError("Please select a product.");
+    const handleAddProduct = () => {
+        if (!selectedProduct || !quantity || !price) {
+            setError('Please fill in all required fields (product, quantity, price)');
             return;
         }
 
-        if (!quantity || quantity <= 0) {
-            setError("Please enter a valid quantity.");
+        const newProduct = {
+            prod_id: selectedProduct.value,
+            prod_name: selectedProduct.label,
+            quantity: parseInt(quantity),
+            price: parseFloat(price)
+        };
+        setSumProduct(sumProduct + (newProduct.price));
+        setAddedProducts([...addedProducts, newProduct]);
+        setQuantity('');
+        setPrice('');
+        setSelectedProduct(null);
+        // Focus on the quantity input after adding a product
+        productSelectRef.current.focus(); 
+    };
+
+    const handleEditProduct = (index) => {
+        setEditingIndex(index);
+        setEditQuantityValue(addedProducts[index].quantity);
+        setEditPriceValue(addedProducts[index].price);
+    };
+
+    const handleSaveEdit = (index) => {
+        const updatedProducts = [...addedProducts];
+        const oldProductPrice = updatedProducts[index].price;
+        console.log('oldProduct.price:', oldProductPrice);
+
+        updatedProducts[index].quantity = parseInt(editQuantityValue);
+        updatedProducts[index].price = parseFloat(editPriceValue);
+
+        console.log('updatedProducts[index].price:', updatedProducts[index].price);
+
+
+        // Update sumProduct on editing the quantity or price
+        const priceChange = updatedProducts[index].price - oldProductPrice;
+        console.log('Price Change:- ', priceChange);
+        setSumProduct(sumProduct + priceChange);
+
+        setAddedProducts(updatedProducts);
+        setEditingIndex(null);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingIndex(null);
+    };
+
+    const handleDeleteProduct = (index) => {
+        const updatedProducts = [...addedProducts];
+        const deletedProductPrice = updatedProducts[index].price;
+        // Update sumProduct on deleting a product
+        setSumProduct(sumProduct - deletedProductPrice);
+        updatedProducts.splice(index, 1);
+        setAddedProducts(updatedProducts);
+    };
+
+    const handleSubmit = async () => {
+        if (addedProducts.length === 0) {
+            setError('Please add at least one product before saving');
             return;
         }
 
-        if (!price || price <= 0) {
-            setError("Please enter a valid price.");
-            return;
-        }
-
-        if (!purchaseDate) {
-            setError("Please select a purchase date.");
-            return;
-        }
+        const purchases = addedProducts.map((product) => ({
+            prod_id: product.prod_id,
+            quantity: product.quantity,
+            price: product.price,
+            username,
+            date: purchaseDate,
+        }));
 
         try {
-            const response = await axios.post('http://localhost:5000/api/purchase_details', {
-                quantity: parseInt(quantity),
-                price: parseFloat(price),
-                prod_id: selectedProduct.value,
-                username: username,
-                date: purchaseDate
-            });
-
+            const response = await axios.post(`${backendUrl}/api/purchases`, purchases);
             if (response.status === 201) {
-                alert('Purchase added successfully!');
-                handleCancel();
+                alert('Purchases saved successfully!');
+                setAddedProducts([]);
+                setSumProduct(0);
             } else {
-                setError('Failed to add purchase.');
+                setError('Failed to save purchases');
             }
         } catch (err) {
-            console.error("Error adding purchase:", err);
-            if (err.response && err.response.data && err.response.data.message) {
-                setError(err.response.data.message);
-            } else {
-                setError('An error occurred while adding the purchase.');
-            }
+            console.error("Error saving purchases:", err);
+            setError('An error occurred while saving purchases');
         }
     };
 
@@ -91,7 +140,8 @@ function AdminDashboard() {
         setQuantity('');
         setPrice('');
         setSelectedProduct(null);
-        setPurchaseDate('');
+        setPurchaseDate(new Date().toISOString().slice(0, 10));
+        setAddedProducts([]);
         if (formRef.current) {
             formRef.current.reset();
         }
@@ -99,7 +149,7 @@ function AdminDashboard() {
 
     const handleLogout = async () => {
         try {
-            await axios.get('http://localhost:5000/logout');
+            await axios.get(`${backendUrl}/logout`);
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('isAdmin');
             localStorage.removeItem('username');
@@ -124,6 +174,7 @@ function AdminDashboard() {
                     <div className="header-actions">
                         <Link to="/add-product" className="header-link">Add Product</Link>
                         <Link to="/report" className="header-link">Product Report</Link>
+                        <Link to="/purchases" className="header-link">Purchases</Link>
                         <button className="logout-button" onClick={handleLogout}>Logout</button>
                     </div>
                 </div>
@@ -132,7 +183,7 @@ function AdminDashboard() {
                 <section className="purchase-form-section">
                     <h2>Record a New Purchase</h2>
                     {error && <div className="error-message">{error}</div>}
-                    <form id="purchaseForm" onSubmit={handleSubmit} ref={formRef}>
+                    <form id="purchaseForm" onSubmit={(e) => e.preventDefault()} ref={formRef}>
                         <div className="form-group">
                             <label htmlFor="purchaseDate">Purchase Date:</label>
                             <input type="date" id="purchaseDate" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} required />
@@ -141,6 +192,7 @@ function AdminDashboard() {
                         <div className="form-group product-search">
                             <label htmlFor="itemName">Product Name:</label>
                             <Select
+                                ref={productSelectRef}
                                 value={selectedProduct}
                                 onChange={handleProductChange}
                                 options={productOptions}
@@ -148,28 +200,78 @@ function AdminDashboard() {
                                 placeholder="Search and select an item..."
                                 id="searchItem"
                                 isClearable
+                                autoFocus
                             />
                         </div>
 
                         <div className="form-group">
                             <label htmlFor="quantity">Quantity:</label>
-                            <input type="number" id="quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+                            <input type="number" id="quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required onKeyDown={(e) => { if (e.key === 'Enter') { document.getElementById('total').focus(); } }} />
                         </div>
 
                         <div className="form-group">
                             <label htmlFor="total">Total Amount:</label>
-                            <input type="number" id="total" value={price} onChange={(e) => setPrice(e.target.value)} required />
+                            <input type="number" id="total" value={price} onChange={(e) => setPrice(e.target.value)} required onKeyDown={(e) => { if (e.key === 'Enter') { handleAddProduct();} }}/>
                         </div>
 
-                        <div className="button-container">
-                            <button type="submit" className="submit-button">Save Purchase</button>
-                            <button type="button" className="cancel-button" onClick={handleCancel}>Cancel</button>
-                        </div>
+                        <button type="button" onClick={handleAddProduct}>Add to List</button>
+                        <button type="button" className="cancel-button" onClick={handleCancel}>Cancel</button>
                     </form>
                 </section>
+                {addedProducts.length > 0 && (
+                    <section className="added-products-section">
+                        <h2>Added Products</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {addedProducts.map((product, index) => (
+                                    <tr key={index}>
+                                        <td>{product.prod_name}</td>
+                                        <td>
+                                            {editingIndex === index ? (
+                                                <input type="number" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value)} />
+                                            ) : (
+                                                product.quantity
+                                            )}
+                                        </td>
+                                        <td>
+                                            {editingIndex === index ? (
+                                                <input type="number" step="0.01" value={editPriceValue} onChange={(e) => setEditPriceValue(e.target.value)} />
+                                            ) : (
+                                                product.price
+                                            )}
+                                        </td>
+                                        <td>
+                                            {editingIndex === index ? (
+                                                <>
+                                                    <button onClick={() => handleSaveEdit(index)}>Save</button>
+                                                    <button onClick={handleCancelEdit}>Cancel</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button onClick={() => handleEditProduct(index)}>Edit</button>
+                                                    <button onClick={() => handleDeleteProduct(index)}>Delete</button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <p className="total-sum">Total: {sumProduct.toFixed(2)}</p> {/* Display the total sum of all products */}
+                        <button type="button" onClick={handleSubmit}>Save Purchases</button>
+                    </section>
+                )}
             </main>
         </div>
     );
 }
 
-export default AdminDashboard;
+export default AdminDashboard; 

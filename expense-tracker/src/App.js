@@ -8,6 +8,7 @@ import ForgotPassword from './components/ForgotPassword';
 import Signup from './components/SignUp';
 import AddNewProduct from './components/AddNewProduct';
 import PageNotFound from './components/PageNotFound'; // Import PageNotFound
+import Purchases from './components/Purchases'; // Import Purchases
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -83,6 +84,10 @@ function App() {
                 {
                     path: "/add-product",
                     element: <AddNewProduct />,
+                },
+                {
+                    path: "/purchases",
+                    element: <Purchases />,
                 },
             ],
         },

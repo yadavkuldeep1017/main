@@ -13,6 +13,7 @@ function AddNewProduct() {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
     useEffect(() => {
         fetchProducts();
@@ -20,7 +21,7 @@ function AddNewProduct() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/products');
+            const response = await axios.get(`${backendUrl}/api/products`);
             setProducts(response.data);
         } catch (err) {
             console.error("Error fetching products:", err);
@@ -38,7 +39,8 @@ function AddNewProduct() {
         }
 
         try {
-            await axios.post('http://localhost:5000/api/products', { prod_name: newProductName, prod_desc: newProductDesc });
+            await axios.post(`${backendUrl}/api/products/add`, { prod_name: newProductName, prod_desc: newProductDesc });
+            alert('Product Added successfully!');
             setNewProductName('');
             setNewProductDesc('');
             fetchProducts();
@@ -67,7 +69,7 @@ function AddNewProduct() {
         }
 
         try {
-            await axios.put(`http://localhost:5000/api/products/${editingProductId}`, { prod_name: editedProductName, prod_desc: editedProductDesc });
+            await axios.put(`${backendUrl}/api/products/${editingProductId}`, { prod_name: editedProductName, prod_desc: editedProductDesc });
             setEditingProductId(null);
             fetchProducts();
         } catch (err) {
@@ -83,7 +85,7 @@ function AddNewProduct() {
     const handleDeleteProduct = async (productId) => {
         setError(null);
         try {
-            await axios.delete(`http://localhost:5000/api/products/${productId}`);
+            await axios.delete(`${backendUrl}/api/products/${productId}`);
             fetchProducts();
         } catch (err) {
             console.error("Error deleting product:", err);
@@ -97,7 +99,7 @@ function AddNewProduct() {
 
     const handleLogout = async () => {
         try {
-            await axios.get('http://localhost:5000/api/logout');
+            await axios.get(`${backendUrl}/logout`);
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('isAdmin');
             localStorage.removeItem('username');
@@ -119,16 +121,15 @@ function AddNewProduct() {
 
     return (
         <div className='add-product-page'>
-            <header className="App-header">
-                <h1>Admin Dashboard</h1>
-                <div className="top-right-buttons">
-                    <Link to="/admin-dashboard">
-                        <button>Add New Purchase</button>
-                    </Link>
-                    <Link to="/report">
-                        <button>Product Report</button>
-                    </Link>
-                    <button onClick={handleLogout}>Logout</button>
+            <header className="dashboard-header">
+                <div className="header-content">
+                    <h1>Add New Product</h1> {/* Changed title */}
+                    <div className="header-actions">
+                        <Link to="/admin-dashboard" className="header-link">Add New Purchase</Link> {/* Home link */}
+                        <Link to="/purchases" className="header-link">Purchases</Link>
+                        <Link to="/report" className="header-link">Product Report</Link>
+                        <button className="logout-button" onClick={handleLogout}>Logout</button>
+                    </div>
                 </div>
             </header>
             <main>
@@ -167,14 +168,14 @@ function AddNewProduct() {
                                 <td>{product.prod_id}</td>
                                 <td>
                                     {editingProductId === product.prod_id ? (
-                                        <input type="text" value={editedProductName} onChange={(e) => setEditedProductName(e.target.value)} required className="add-product-input"/>
+                                        <input type="text" value={editedProductName} onChange={(e) => setEditedProductName(e.target.value)} required className="add-product-input" />
                                     ) : (
                                         product.prod_name
                                     )}
                                 </td>
                                 <td>
                                     {editingProductId === product.prod_id ? (
-                                        <input type="text" value={editedProductDesc} onChange={(e) => setEditedProductDesc(e.target.value)} required className="add-product-input"/>
+                                        <input type="text" value={editedProductDesc} onChange={(e) => setEditedProductDesc(e.target.value)} required className="add-product-input" />
                                     ) : (
                                         product.prod_desc
                                     )}

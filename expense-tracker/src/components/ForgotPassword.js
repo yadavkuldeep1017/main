@@ -11,6 +11,7 @@ function ForgotPassword() {
     const [error, setError] = useState(null);
     const [message, setMessage] = useState(null);
     const navigate = useNavigate();
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
     const handleMobileSubmit = async (e) => {
         e.preventDefault();
@@ -23,7 +24,7 @@ function ForgotPassword() {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/forgot-password', { mobileNumber });
+            const response = await axios.post(`${backendUrl}/forgot-password`, { mobileNumber });
             if (response.status === 200) {
                 setMessage(response.data.message);
                 setStage(2); // Move to password creation stage
@@ -58,7 +59,7 @@ function ForgotPassword() {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/reset-password', {
+            const response = await axios.post(`${backendUrl}/reset-password`, {
                 mobileNumber,
                 newPassword,
             });
